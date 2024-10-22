@@ -6,7 +6,7 @@ const config = require('../config');
 
 
 
-// 로그인
+// 로그인 라우터 
 router.post('/login', async (req, res) => {
   console.log('로그인 도착');
   const logDate = new Date().toISOString();
@@ -36,6 +36,21 @@ router.post('/login', async (req, res) => {
 
       if (password === storedPassword) {
         console.log(user.record_no, user.cezUserID, user.cezUserPW, logDate);
+
+        let loginSuccessDays = new Array(7).fill(0);
+
+        user._bp_lineitems.forEach(item => {
+          if (item.cezLogType === '로그인 성공') {
+            const prevLogDate = new Date(item.cezLogDate);
+            const dayIndex = prevLogDate.getDay(); 
+            loginSuccessDays[dayIndex] += 1;  
+          }
+        });
+
+        const todayDayIndex = new Date().getDay();
+        loginSuccessDays[todayDayIndex] += 1; 
+
+        console.log(loginSuccessDays);
         await axios.put(`${config.unifierUrl}/ws/rest/service/v1/bp/record`, {
           options: {
             bpname: "member(Seo0)",
@@ -58,10 +73,10 @@ router.post('/login', async (req, res) => {
             'Content-Type': 'application/json'
           }
         });
-        
+
         const logTypes = user._bp_lineitems.map(item => item.cezLogType);
-        const loginSuccess = logTypes.filter(log => log ==="로그인 성공").length;
-        const loginFail = logTypes.filter(log => log ==="로그인 실패").length;
+        const loginSuccess = logTypes.filter(log => log === "로그인 성공").length;
+        const loginFail = logTypes.filter(log => log === "로그인 실패").length;
 
         return res.status(200).json({
           message: '로그인 성공!',
@@ -69,14 +84,17 @@ router.post('/login', async (req, res) => {
             id: user.cezUserID,
             name: user.cesusername,
             email: user.cezUserEmail,
-            record_no : user.record_no,
-            CountLoginSuccess : loginSuccess,
-            CountLoginFail : loginFail
+            record_no: user.record_no,
+            CountLoginSuccess: loginSuccess,
+            CountLoginFail: loginFail,
+            logDate: logDate,
+            loginSuccessDays: loginSuccessDays  
           }
         });
-        
+
       } else {
         console.log("비밀번호 불일치");
+
         await axios.put(`${config.unifierUrl}/ws/rest/service/v1/bp/record`, {
           options: {
             bpname: "member(Seo0)",
@@ -111,7 +129,6 @@ router.post('/login', async (req, res) => {
     return res.status(500).json({ message: '서버 오류: 유니파이어 API 호출 중 문제가 발생했습니다.', error: error.message });
   }
 });
-
 
 // 회원가입
 router.post('/signup', async (req, res) => {
@@ -349,6 +366,103 @@ router.post('/updatePw', async(req,res) => {
     console.error('Error updating password with Unifier API:', error);
     res.status(500).json({ message: '비밀번호 재설정 중 서버 오류가 발생했습니다.' });
   }
-})
+});
+
+// 프로젝트 목록 조회
+router.get('/getProjects', async (req, res) => {
+  try {
+    const response = await axios.get(`${config.unifierUrl}/ws/rest/service/v1/admin/projectshell`,{
+       headers: {
+        'Authorization': `Bearer ${config.token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    const projectData = response.data.data.map(({ projectname, projectnumber }) => ({
+      project_name: projectname,
+      project_number: projectnumber,
+    }));
+    res.status(200).json(projectData);
+  } catch (error) {
+    console.error('프로젝트 목록 조회 오류:', error);
+    res.status(500).json({ message: '프로젝트 목록을 가져오는 중 오류가 발생했습니다.' });
+  }
+});
+
+// BP 목록 조회 라우터
+router.get('/getBpList', async (req, res) => {
+  const { project_number, project_name } = req.query;  // 쿼리 파라미터로 프로젝트 정보 수신
+  console.log('Project Name:', project_name);
+  console.log('Project Number:', project_number);
+
+  try {
+    let response;
+    if (project_number==='0') {
+      response = await axios.get(`${config.unifierUrl}/ws/rest/service/v1/admin/bps`, {
+        headers: {
+          'Authorization': `Bearer ${config.token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+    } else {
+      // project_number가 있을 때 기존 엔드포인트 호출
+      response = await axios.get(`${config.unifierUrl}/ws/rest/service/v1/admin/bps/${project_number}`, {
+        headers: {
+          'Authorization': `Bearer ${config.token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+    }
+    const bpData = response.data.data.map(({ bp_name }) => ({
+      bpname: bp_name
+    }));
+    console.log('BP 목록 응답:', response.data);
+
+    console.log(bpData);
+    res.status(200).json(bpData);
+  } catch (error) {
+    console.error('BP 목록 조회 오류:', error);
+    res.status(500).json({ message: 'BP 목록을 가져오는 중 오류가 발생했습니다.' });
+  }
+});
+
+
+router.post('/getBpData', async (req, res) => {
+  const { bpname,project_number }=req.body;
+  try {
+    let response;
+    const body = {
+        "bpname" : bpname,
+        "lineitem" : "no"
+    }
+    if(project_number==='0')
+    {
+       response = await axios.post(`${config.unifierUrl}/ws/rest/service/v1/bp/records`, body, {
+        headers: {
+          'Authorization': `Bearer ${config.token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+    }else{
+      response = await axios.post(`${config.unifierUrl}/ws/rest/service/v1/bp/records/${project_number}`, body, {
+        headers: {
+          'Authorization': `Bearer ${config.token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+    }
+
+    if (response.data) {
+      console.log(response.data);
+      return res.status(200).json(response.data);
+
+    } else {
+      return res.status(404).json({ message: 'BP 데이터를 찾을 수 없습니다.' });
+    }
+  } catch (error) {
+    console.error('BP 데이터 가져오기 오류:', error.message);
+    return res.status(500).json({ message: '서버 오류: BP 데이터를 가져오는 중 문제가 발생했습니다.', error: error.message });
+  }
+});
+
 
 module.exports = router;

@@ -5,6 +5,10 @@ import SignUp from './SignUp';
 import Landing from './Landing'; 
 import Dashboard from './Dashboard';
 import ResetPassword from './components/ResetPassword';
+import GridData from './GridData';
+
+
+
 
 function App() {
   return (
@@ -15,6 +19,7 @@ function App() {
         <Route path="/sign-up" element={<SignUp />} /> 
         <Route path="/dashboard" element={<Dashboard />} /> 
         <Route path="/reset-password/:userId" element={<ResetPassword />} />
+        <Route path="/gridData" element={<GridData />} /> 
 
       </Routes>
     </Router>

@@ -9,7 +9,7 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
 import MuiCard from '@mui/material/Card';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
 import axios from 'axios';
 import AppTheme from './shared-theme/AppTheme';
@@ -17,6 +17,7 @@ import ColorModeSelect from './shared-theme/ColorModeSelect';
 import { GoogleIcon, FacebookIcon } from './components/CustomIcons';
 import Divider from '@mui/material/Divider';
 const api_url=process.env.REACT_APP_LOCAL_URL;
+
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
@@ -63,6 +64,7 @@ const SignUpContainer = styled(Stack)(({ theme }) => ({
 }));
 
 export default function SignUp(props) {
+  const navigate = useNavigate();
   const [formData, setFormData] = React.useState({
     id: '',
     name: '',
@@ -168,7 +170,8 @@ export default function SignUp(props) {
         });
 
         if (response.status === 200) {
-          alert('회원가입 성공');
+          alert('회원가입 성공\n로그인 페이지로 이동합니다.');
+          navigate('/signin');
         } else {
           console.error('회원가입 실패 : ', response.data.message);
         }
