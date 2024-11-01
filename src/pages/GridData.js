@@ -36,6 +36,7 @@ function GridData() {
   const [isEditable, setIsEditable] = useState(true);
   const [isSaveMode, setIsSaveMode] = useState(true); // 저장 모드와 수정 모드 전환
   const [lineItemColumns, setLineItemColumns] = useState([]);
+  const [globalLineItemColumns, setGlobalLineItemColumns] = useState([]);
 
   const toggleDrawer = (open) => (event) => {
     setDrawerOpen(open);
@@ -140,12 +141,11 @@ function GridData() {
       const data = response?.data?.data || [];
 
      const sampleRecordWithLineItems = data.find((item) => item._bp_lineitems && item._bp_lineitems.length > 0);
+
     if (sampleRecordWithLineItems) {
       const lineItemKeys = Object.keys(sampleRecordWithLineItems._bp_lineitems[0]);
-      setLineItemColumns(lineItemKeys); // 라인아이템 컬럼 구조 설정
-    } else {
-      setLineItemColumns([]); // 라인아이템이 없을 경우 빈 배열로 초기화
-    }
+      setGlobalLineItemColumns(lineItemKeys); // 라인아이템 컬럼 형식 전역 설정
+    } 
 
     const formattedRows = data.map((item) => ({
       id: item.id || uuidv4(), // id가 없으면 UUID를 생성하여 사용
@@ -340,15 +340,28 @@ function GridData() {
     // }));
     // setRows(updatedRows);
   };
-
   const toggleSaveEdit = () => {
     const nonEmptyRow = rows.filter((row) => {
+      // row_id를 제외하고 값이 있는지 확인
       return Object.keys(row).some(
         (key) => key !== "id" && row[key] !== "" && row[key] !== undefined
       );
     });
-    setRows(nonEmptyRow);
-
+  
+    // 각 row의 _bp_lineitems를 검사하여 빈 라인아이템 제거
+    const cleanedRows = nonEmptyRow.map((row) => {
+      if (row._bp_lineitems && row._bp_lineitems.length > 0) {
+        row._bp_lineitems = row._bp_lineitems.filter((lineItem) => {
+          return Object.keys(lineItem).some(
+            (key) => key !== "id" && lineItem[key] !== "" && lineItem[key] !== undefined
+          );
+        });
+      }
+      return row;
+    });
+  
+    setRows(cleanedRows); // 상태 업데이트
+  
     if (isSaveMode) {
       // 저장 모드
       alert("데이터가 저장되었습니다.");
@@ -358,9 +371,10 @@ function GridData() {
       // 수정 모드
       setIsEditable(true); // 수정 가능하게 변경
     }
-
+  
     setIsSaveMode(!isSaveMode); // 버튼을 저장 <-> 수정 모드로 전환
   };
+  
 
   const enableEditting = () => {
     setIsEditable(true);
