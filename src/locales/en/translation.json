@@ -1,0 +1,84 @@
+{
+    "general": {
+      "welcome": "Welcome!",
+      "loginPrompt": "Press the login button to sign in.",
+      "login": "Login",
+      "home": "Home",
+      "dataView": "Data View",
+      "save": "Save",
+      "send": "Send",
+      "logout": "Logout",
+      "noData": "No data available for download.",
+      "addRecord": "Add BP Record",
+      "id": "ID",
+      "email": "Email",
+      "password": "Password",
+      "name": "Name",
+      "cancel": "Cancel",
+      "continue": "Continue"
+    },
+    "login": {
+      "loginSuccess": "Login Successful",
+      "loginFail": "Login Failed",
+      "loginSuccessDays": "Login Success Count by Day",
+      "loginDataMissing": "No login data available"
+    },
+    "logout": {
+      "logoutButton": "Logout",
+      "logoutSuccess": "Logout Successful",
+      "logoutError": "An error occurred during logout.",
+      "logoutWarning": "User data not found while attempting to log out."
+    },
+    "errors": {
+      "fetchProjectError": "Error occurred while fetching the project list.",
+      "fetchBpError": "Error occurred while fetching the BP list.",
+      "fetchDataError": "BP data retrieval error"
+    },
+    "confirmation": {
+      "sendConfirm": "Are you sure you want to send {{project}}'s {{bp}} data?",
+      "sendSuccess": "Successfully sent {{project}}'s {{bp}} data."
+    },
+    "dashboard": {
+      "home": "Home",
+      "dataView": "Data View",
+      "loginSuccessFailTitle": "Login Success/Failure Statistics",
+      "loginDataMissing": "No login data available",
+      "weeklyLoginTitle": "Login Success Count by Day of the Week"
+    },
+    "days": {
+      "sunday": "Sun",
+      "monday": "Mon",
+      "tuesday": "Tue",
+      "wednesday": "Wed",
+      "thursday": "Thu",
+      "friday": "Fri",
+      "saturday": "Sat"
+    },
+    "sign": {
+      "signIn": "Sign In",
+      "forgotPW": "Forgot Password?",
+      "signUp": "Sign Up",
+      "ownAccount": "Already have an account?",
+      "notAccount": "Not a member yet?"
+    },
+    "forgotPassword": {
+      "title": "Password Reset",
+      "description": "Enter the email to receive the ID and password reset link.",
+      "successMessage": "Password reset link sent to your email.",
+      "errorMessage": "An error occurred while processing your request. Please try again.",
+      "serverError": "Server error occurred. Please try again."
+    },
+    "resetPassword": {
+      "title": "Password Reset for {{userId}}",
+      "newPasswordLabel": "New Password",
+      "confirmPasswordLabel": "Confirm Password",
+      "passwordMinLength": "Password must be at least 6 characters.",
+      "passwordMismatch": "Passwords do not match.",
+      "successMessage": "Password successfully reset.",
+      "errorMessage": "Error occurred during password reset. Please try again.",
+      "serverError": "Server error occurred. Please try again.",
+      "submitButton": "Reset Password",
+      "resetPwBody" : "<p>Hello, {{id}}.</p><p>Click the link below to reset your password:</p><p><a href='{{url}}'>Reset Password</a></p>"
+    }
+  }
+  

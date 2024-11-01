@@ -1,0 +1,119 @@
+{
+    
+    "general": {
+      "welcome": "환영합니다!",
+      "loginPrompt" : "로그인하기 버튼을 눌러 로그인하세요.",
+      "login": "로그인하기",
+      "home": "홈",
+      "dataView": "데이터 조회",
+      "save": "저장",
+      "send": "전송",
+      "logout": "로그아웃",
+      "noData": "다운로드할 데이터가 없습니다.",
+      "addRecord": "BP 레코드 추가",
+      "id": "아이디",
+      "email": "이메일",
+      "password": "비밀번호",
+      "name": "이름",
+      "cancel" : "취소",
+      "continue" : "확인"
+    },
+    "login": {
+      "loginSuccess": "로그인 성공",
+      "loginFail": "로그인 실패",
+      "loginSuccessDays": "요일별 로그인 성공 횟수",
+      "loginDataMissing": "로그인 데이터 없음"
+    },
+    "logout": {
+      "logoutButton": "로그아웃",
+      "logoutSuccess": "로그아웃 성공",
+      "logoutError": "로그아웃 중 오류가 발생했습니다.",
+      "logoutWarning": "로그아웃 시도 중 사용자 데이터가 존재하지 않습니다."
+    },
+    "errors": {
+      "fetchProjectError": "프로젝트 목록을 불러오는 중 오류가 발생했습니다.",
+      "fetchBpError": "BP 목록을 불러오는 중 오류가 발생했습니다.",
+      "fetchDataError": "BP 데이터 가져오기 오류",
+      "serverError": "서버 오류가 발생했습니다. 다시 시도해주세요."
+    },
+    "confirmation": {
+      "sendConfirm": "정말로 {{project}}의 {{bp}} 데이터를 전송하시겠습니까?",
+      "sendSuccess": "{{project}}의 {{bp}} 데이터 전송을 완료했습니다."
+    },
+    "dashboard": {
+      "home": "홈",
+      "dataView": "데이터 조회",
+      "loginSuccessFailTitle": "로그인 성공/실패 통계",
+      "loginDataMissing": "로그인 데이터 없음",
+      "weeklyLoginTitle": "요일별 로그인 성공 횟수"
+    },
+    "days": {
+      "sunday": "일",
+      "monday": "월",
+      "tuesday": "화",
+      "wednesday": "수",
+      "thursday": "목",
+      "friday": "금",
+      "saturday": "토"
+    },
+    "sign" : {
+        "signIn" : "사인인",
+        "forgotPW" : "비밀번호를 잊으셨나요?",
+        "signUp" : "회원가입",
+        "ownAccount" :"이미 계정이 있으신가요?",
+        "notAccount" : "아직 회원이 아니신가요?"
+    },
+    "forgotPassword": {
+    "title": "비밀번호 재설정",
+    "description": "아이디와 비밀번호 재설정을 위한 링크를 전송받을 메일을 입력해주세요.",
+    "successMessage": "비밀번호 재설정 링크가 이메일로 전송되었습니다.",
+    "errorMessage": "요청 처리 중 오류가 발생했습니다. 다시 시도해주세요."
+  },
+  "resetPassword": {
+    "title": "{{userId}} 님의 비밀번호 재설정",
+    "newPasswordLabel": "새 비밀번호",
+    "confirmPasswordLabel": "비밀번호 확인",
+    "passwordMinLength": "비밀번호는 6자리 이상으로 입력해야 합니다.",
+    "passwordMismatch": "비밀번호가 일치하지 않습니다.",
+    "successMessage": "비밀번호가 성공적으로 재설정되었습니다.",
+    "errorMessage": "비밀번호 재설정 중 오류가 발생했습니다. 다시 시도해주세요.",
+    "submitButton": "비밀번호 재설정",
+    "resetPwBody" : "<p>안녕하세요, {{id}}님.</p><p>비밀번호를 재설정하려면 아래의 링크를 클릭하세요:</p><p><a href='{{url}}'>비밀번호 재설정</a></p>"
+  },
+    "appBar": {
+      "title": "Data Inquiry"
+    },
+    "buttons": {
+      "fetchData": "Fetch Data",
+      "downloadExcel": "Download Excel",
+      "uploadExcel": "Upload Excel",
+      "addBpRecord": "Add BP Record",
+      "save": "Save",
+      "edit": "Edit",
+      "send": "Send",
+      "addLineItem": "Add Line Item",
+      "confirmDelete": "Are you sure you want to delete?",
+      "confirmSend": "Are you sure you want to send data for {{projectName}}’s {{bpName}}?"
+    },
+    "alerts": {
+      "dataSaved": "Data has been saved.",
+      "dataFetchError": "An error occurred while fetching data.",
+      "dataSendSuccess": "Data has been successfully sent for {{projectName}}'s {{bpName}}.",
+      "dataSendError": "An error occurred while sending data.",
+      "noDataToSend": "There is no data to send.",
+      "uploadError": "An error occurred while reading the Excel file.",
+      "deleteSuccess": "Line item {{lineItem}} has been deleted from record {{recordNo}}.",
+      "deleteError": "An error occurred while deleting the line item.",
+      "downloadError": "There is no data to download."
+    },
+    "labels": {
+      "project": "Project",
+      "bp": "BP",
+      "noLineItems": "No Line Items Available",
+      "lineItems": "Line Items"
+    },
+    "drawer": {
+      "home": "Home",
+      "dataInquiry": "Data Inquiry"
+    }
+  }

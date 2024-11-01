@@ -7,9 +7,8 @@ const app = express();
 const port = 3000;
 
 app.use(cors());
-app.use(express.json());
-// app.use(express.json({ limit: '50mb' }));  // JSON 본문 크기 제한 설정
-// app.use(express.urlencoded({ limit: '50mb', extended: true }));  // URL-encoded 본문 크기 제한 설정
+app.use(express.json({ limit: '50mb' }));  // JSON 본문 크기 제한 설정
+app.use(express.urlencoded({ limit: '50mb', extended: true }));  // URL-encoded 본문 크기 제한 설정
 
 app.use('/api', apiRoutes);
 console.log('API Routes가 로드되었습니다.');

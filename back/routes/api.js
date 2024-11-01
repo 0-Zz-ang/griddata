@@ -14,7 +14,7 @@ router.post('/login', async (req, res) => {
   const { id, password } = req.body;
   try {
     const checkResponse = await axios.post(`${config.unifierUrl}/ws/rest/service/v1/bp/records`, {
-      "bpname" : "member(Seo0)",
+      "bpname" : "member(seoyoung)2",
       "lineitem" : "yes",
       "record_fields" : "cezUserID;cezUserPW;cesusername;record_no;cezUserEmail",
       "filter_criteria" : {
@@ -58,7 +58,7 @@ router.post('/login', async (req, res) => {
         // 로그인 성공 기록 업데이트
         await axios.put(`${config.unifierUrl}/ws/rest/service/v1/bp/record`, {
           options: {
-            bpname: "member(Seo0)",
+            bpname: "member(seoyoung)2",
             LineItemIdentifier: "LineAutoSeq"
           },
           data: [{
@@ -104,7 +104,7 @@ router.post('/login', async (req, res) => {
         // 비밀번호 불일치 로그 저장
         await axios.put(`${config.unifierUrl}/ws/rest/service/v1/bp/record`, {
           options: {
-            bpname: "member(Seo0)",
+            bpname: "member(seoyoung)2",
             LineItemIdentifier: "LineAutoSeq"
           },
           data: [{
@@ -147,7 +147,7 @@ router.post('/signup', async (req, res) => {
   try {
     const signupBody = {
       "options" : {
-        "bpname" : "member(Seo0)"
+        "bpname" : "member(seoyoung)2"
       },
       "data" : [{
         "cezUserID" : id,
@@ -200,7 +200,7 @@ router.post('/checkId', async (req, res) => {
     console.log("아이디 : ",id);
     console.log("이메일 : ", email);
     const checkBody = {
-      "bpname" : "member(Seo0)",
+      "bpname" : "member(seoyoung)2",
       "lineitem" : "no",
       "filter_criteria" : {
           "join" : "OR",
@@ -253,7 +253,7 @@ router.post('/logout', async (req, res) => {
   try {
         await axios.put(`${config.unifierUrl}/ws/rest/service/v1/bp/record`, {
           options: {
-            bpname: "member(Seo0)",
+            bpname: "member(seoyoung)2",
             LineItemIdentifier: "LineAutoSeq"
           },
           data: [{
@@ -287,7 +287,7 @@ router.post('/forgotpassword', async (req,res) => {
   console.log("비밀번호 변경 이메일 전송 라우터 도착")
   try {
     const checkId = await axios.post(`${config.unifierUrl}/ws/rest/service/v1/bp/records`, {
-      "bpname" : "member(Seo0)",
+      "bpname" : "member(seoyoung)2",
       "lineitem" : "no",
       "record_fields" : "cezUserID;record_no",
       "filter_criteria" : {
@@ -350,7 +350,7 @@ router.post('/updatePw', async(req,res) => {
   try {
      await axios.put(`${config.unifierUrl}/ws/rest/service/v1/bp/record`, {
       "options": {
-        "bpname": "member(Seo0)",
+        "bpname": "member(seoyoung)2",
         "LineItemIdentifier": "LineAutoSeq"
     },
 
@@ -558,7 +558,7 @@ router.post('/sendData', async (req, res) => {
         },
         data: chunk.map(record => ({
           ...record,
-          _bp_lineitems: record._bp_lineitems || []
+          _bp_lineitems: (record._bp_lineitems || []).filter(lineItem => !lineItem.LineAutoSeq) // lineAutoSeq가 없는 라인 아이템만 포함
         }))
       };
 

@@ -12,10 +12,9 @@ import MuiCard from '@mui/material/Card';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
 import axios from 'axios';
-import AppTheme from './shared-theme/AppTheme';
-import ColorModeSelect from './shared-theme/ColorModeSelect';
-import { GoogleIcon, FacebookIcon } from './components/CustomIcons';
-import Divider from '@mui/material/Divider';
+import AppTheme from '../shared-theme/AppTheme';
+import ColorModeSelect from '../shared-theme/ColorModeSelect';
+import { useTranslation } from 'react-i18next';
 const api_url=process.env.REACT_APP_LOCAL_URL;
 
 
@@ -64,6 +63,7 @@ const SignUpContainer = styled(Stack)(({ theme }) => ({
 }));
 
 export default function SignUp(props) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [formData, setFormData] = React.useState({
     id: '',
@@ -211,11 +211,11 @@ export default function SignUp(props) {
         <ColorModeSelect sx={{ position: 'fixed', top: '1rem', right: '1rem' }} />
         <Card variant="outlined">
           <Typography component="h1" variant="h4" sx={{ width: '100%', fontSize: 'clamp(2rem, 10vw, 2.15rem)' }}>
-            Sign up
+          {t('sign.signUp')}
           </Typography>
           <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <FormControl>
-              <FormLabel htmlFor="name">이름</FormLabel>
+              <FormLabel htmlFor="name">{t('general.name')}</FormLabel>
               <TextField
                 autoComplete="name"
                 name="name"
@@ -223,17 +223,17 @@ export default function SignUp(props) {
                 id="name"
                 value={formData.name}
                 onChange={handleChange}
-                placeholder="홍길동"
+                placeholder={t('general.name')}
                 error={nameError}
                 helperText={nameMessage}
               />
             </FormControl>
             <FormControl>
-              <FormLabel htmlFor="id">아이디</FormLabel>
+            <FormLabel htmlFor="id">{t('general.id')}</FormLabel>
               <TextField
                 fullWidth
                 id="id"
-                placeholder="id"
+                placeholder={t('general.id')}
                 name="id"
                 autoComplete="id"
                 value={formData.id}
@@ -245,11 +245,11 @@ export default function SignUp(props) {
               />
             </FormControl>
             <FormControl>
-              <FormLabel htmlFor='email'>Email</FormLabel>
+            <FormLabel htmlFor="email">{t('general.email')}</FormLabel>
               <TextField
                 fullWidth
                 id='email'
-                placeholder='your@email.com'
+                placeholder={t('general.email')}
                 name='email'
                 value={formData.email}
                 onChange={handleChange}
@@ -261,7 +261,7 @@ export default function SignUp(props) {
               />
             </FormControl>
             <FormControl>
-              <FormLabel htmlFor="password">비밀번호</FormLabel>
+            <FormLabel htmlFor="password">{t('general.password')}</FormLabel>
               <TextField
                 fullWidth
                 name="password"
@@ -277,33 +277,14 @@ export default function SignUp(props) {
               />
             </FormControl>
             <Button type="submit" fullWidth variant="contained">
-              Sign up
+            {t('sign.signUp')}
             </Button>
             <Typography sx={{ textAlign: 'center' }}>
-              이미 계정이 있으신가요?{' '}
+            {t('sign.ownAccount')}{' '}
               <Link component={RouterLink} to="/signin" variant="body2">
-                Sign in
+              {t('sign.signIn')}
               </Link>
             </Typography>
-          </Box>
-          <Divider>or</Divider>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Button
-              fullWidth
-              variant="outlined"
-              onClick={() => alert('Sign in with Google')}
-              startIcon={<GoogleIcon />}
-            >
-              Sign in with Google
-            </Button>
-            <Button
-              fullWidth
-              variant="outlined"
-              onClick={() => alert('Sign in with Facebook')}
-              startIcon={<FacebookIcon />}
-            >
-              Sign in with Facebook
-            </Button>
           </Box>
         </Card>
       </SignUpContainer>

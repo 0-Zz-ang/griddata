@@ -9,14 +9,13 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
 import MuiCard from '@mui/material/Card';
-import ForgotPassword from './components/ForgotPassword';
+import ForgotPassword from './ForgotPassword';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
-import { GoogleIcon, FacebookIcon } from './components/CustomIcons';
 import axios from 'axios';
-import Divider from '@mui/material/Divider';
-import AppTheme from './shared-theme/AppTheme'
-import ColorModeSelect from './shared-theme/ColorModeSelect';
+import AppTheme from '../shared-theme/AppTheme'
+import ColorModeSelect from '../shared-theme/ColorModeSelect';
+import { useTranslation } from 'react-i18next';
  
 const api_url=process.env.REACT_APP_LOCAL_URL;
 
@@ -62,6 +61,7 @@ const SignInContainer = styled(Stack)(({ theme }) => ({
 }));
 
 export default function SignIn(props) {
+  const { t } = useTranslation();
   const [formData, setFormData] = React.useState({
     id: '',
     password: '',
@@ -71,7 +71,7 @@ export default function SignIn(props) {
   const [idErrorMessage, setIdErrorMessage] = React.useState('');
   const [passwordError, setPasswordError] = React.useState(false);
   const [passwordErrorMessage, setPasswordErrorMessage] = React.useState('');
-  const [generalError, setGeneralError] = React.useState(''); // 일반적인 에러 메시지 상태 추가
+  const [generalError, setGeneralError] = React.useState(''); 
   const [open, setOpen] = React.useState(false);
 
   const idInputRef = React.useRef();
@@ -193,7 +193,7 @@ export default function SignIn(props) {
             variant="h4"
             sx={{ width: '100%', fontSize: 'clamp(2rem, 10vw, 2.15rem)' }}
           >
-            Sign in
+           {t('sign.signIn')}
           </Typography>
           <Box
             component="form"
@@ -202,14 +202,14 @@ export default function SignIn(props) {
             sx={{ display: 'flex', flexDirection: 'column', width:'100%',gap: 2 }}
           >
             <FormControl>
-              <FormLabel htmlFor="id">아이디</FormLabel>
+              <FormLabel htmlFor="id">{t('general.id')}</FormLabel>
               <TextField
                 error={idError}
                 helperText={idErrorMessage}
                 id="id"
                 type="text"
                 name="id"
-                placeholder="ID"
+                placeholder={t('general.id')}
                 autoComplete="id"
                 autoFocus
                 required
@@ -223,7 +223,7 @@ export default function SignIn(props) {
             </FormControl>
             <FormControl>
               <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                <FormLabel htmlFor="password">Password</FormLabel>
+                <FormLabel htmlFor="password">{t('general.password')}</FormLabel>
                 <Link
                   component="button"
                   type="button"
@@ -231,7 +231,7 @@ export default function SignIn(props) {
                   variant="body2"
                   sx={{ alignSelf: 'baseline' }}
                 >
-                  비밀번호를 잊으셨나요?
+                   {t('sign.forgotPW')}
                 </Link>
               </Box>
               <TextField
@@ -257,33 +257,14 @@ export default function SignIn(props) {
             )}
             <ForgotPassword open={open} handleClose={handleClose} />
             <Button type="submit" fullWidth variant="contained">
-              Sign in
+            {t('sign.signIn')}
             </Button>
             <Typography sx={{ textAlign: 'center' }}>
-            아직 회원이 아니신가요?{' '}
+            {t('sign.notAccount')}{' '}
               <Link component={RouterLink} to="/sign-up" variant="body2">
-                Sign up
+              {t('sign.signUp')}
               </Link>
             </Typography>
-          </Box>
-          <Divider>or</Divider>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Button
-              fullWidth
-              variant="outlined"
-              onClick={() => alert('Sign in with Google')}
-              startIcon={<GoogleIcon />}
-            >
-              Sign in with Google
-            </Button>
-            <Button
-              fullWidth
-              variant="outlined"
-              onClick={() => alert('Sign in with Facebook')}
-              startIcon={<FacebookIcon />}
-            >
-              Sign in with Facebook
-            </Button>
           </Box>
         </Card>
       </SignInContainer>

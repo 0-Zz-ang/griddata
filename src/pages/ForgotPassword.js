@@ -8,8 +8,13 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import OutlinedInput from '@mui/material/OutlinedInput';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
+import { useRecoilValue } from 'recoil';
+import { languageState } from '../recoil/atoms';
 
 function ForgotPassword({ open, handleClose }) {
+  const currentLang = useRecoilValue(languageState);
+  const { t } = useTranslation();
   const handleSubmit = async (event) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
@@ -22,16 +27,17 @@ function ForgotPassword({ open, handleClose }) {
       const response = await axios.post(`${api_url}/api/forgotpassword`, {
         id,
         email,
-        mail_url
+        mail_url,
+        lang: currentLang
       });
       if (response.status === 200) {
-        alert('비밀번호 재설정 링크가 이메일로 전송되었습니다.');
+        alert(t('forgotPassword.successMessage'));
       } else {
-        alert('요청 처리 중 오류가 발생했습니다. 다시 시도해주세요.');
+        alert(t('forgotPassword.errorMessage'));
       }
     } catch (error) {
       console.error('Error submitting forgot password request:', error);
-      alert('서버 오류가 발생했습니다. 다시 시도해주세요.');
+      alert(t('errors.serverError'));
     }
     handleClose();
   };
@@ -45,13 +51,11 @@ function ForgotPassword({ open, handleClose }) {
         onSubmit: handleSubmit,
       }}
     >
-      <DialogTitle>비밀번호 재설정</DialogTitle>
+      <DialogTitle>{t('forgotPassword.title')}</DialogTitle>
       <DialogContent
         sx={{ display: 'flex', flexDirection: 'column', gap: 2, width: '100%' }}
       >
-        <DialogContentText>
-          아이디와 비밀번호 재설정을 위한 링크를 전송받을 메일을 입력해주세요.
-        </DialogContentText>
+        <DialogContentText>{t('forgotPassword.description')}</DialogContentText>
         <OutlinedInput
           autoFocus
           required
@@ -59,7 +63,7 @@ function ForgotPassword({ open, handleClose }) {
           id="id"
           name="id"
           label="ID"
-          placeholder="ID"
+          placeholder={t('general.id')}
           type="text"
           fullWidth
         />
@@ -69,15 +73,15 @@ function ForgotPassword({ open, handleClose }) {
           id="email"
           name="email"
           label="Email address"
-          placeholder="Email address"
+          placeholder={t('general.email')}
           type="email"
           fullWidth
         />
       </DialogContent>
       <DialogActions sx={{ pb: 3, px: 3 }}>
-        <Button onClick={handleClose}>Cancel</Button>
+        <Button onClick={handleClose}>{t('general.cancel')}</Button>
         <Button variant="contained" type="submit">
-          Continue
+        {t('general.continue')}
         </Button>
       </DialogActions>
     </Dialog>
