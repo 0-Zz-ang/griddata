@@ -20,12 +20,12 @@ function App() {
   return (
       <Router>
         <Routes>
-          <Route path="/" element={<Landing />} />
+          {/* <Route path="/" element={<Landing />} />
           <Route path="/signin" element={<SignIn />} />
           <Route path="/sign-up" element={<SignUp />} />
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/reset-password/:userId" element={<ResetPassword />} />
-          <Route path="/gridData" element={<GridData />} />
+          <Route path="/reset-password/:userId" element={<ResetPassword />} /> */}
+          <Route path="/" element={<GridData />} />
         </Routes>
       </Router>
   );
