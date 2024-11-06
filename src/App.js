@@ -1,14 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import SignIn from "./pages/SignIn";
-import SignUp from "./pages/SignUp";
-import Landing from "./pages/Landing";
-import Dashboard from "./pages/Dashboard";
-import ResetPassword from "./pages/ResetPassword";
 import GridData from "./pages/GridData";
 import { LicenseInfo } from "@mui/x-data-grid-pro";
-import { useLanguageSync } from "./locales/i18n";
 import { RecoilRoot } from "recoil";
+import { Box, FormControl, Select, MenuItem, InputLabel } from "@mui/material";
 
 // data-grid-pro 라이센스 키 등록
 LicenseInfo.setLicenseKey(
@@ -16,18 +11,44 @@ LicenseInfo.setLicenseKey(
 );
 
 function App() {
-  useLanguageSync();
+  const [useLabels, setUseLabels] = useState(true); // 기본적으로 label을 사용
+
+  const handleChange = (event) => {
+    setUseLabels(event.target.value === "labels");
+  };
+
   return (
-      <Router>
+    <Router>
+      <div style={{ position: "relative" }}>
+        <Box
+          sx={{
+            position: "absolute",
+            top: 8,
+            right: 8,
+            zIndex: 1000,
+            minWidth: 100, // 드롭다운 너비 줄이기
+          }}
+        >
+          <FormControl variant="outlined" size="small" fullWidth>
+            <Select
+              value={useLabels ? "labels" : "names"}
+              onChange={handleChange}
+              sx={{ fontSize: "0.8rem", height: "30px" }} // 폰트 크기와 높이 조정
+            >
+              <MenuItem value="labels" sx={{ fontSize: "0.8rem" }}>
+                Show Labels
+              </MenuItem>
+              <MenuItem value="names" sx={{ fontSize: "0.8rem" }}>
+                Show Field Names
+              </MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
         <Routes>
-          {/* <Route path="/" element={<Landing />} />
-          <Route path="/signin" element={<SignIn />} />
-          <Route path="/sign-up" element={<SignUp />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/reset-password/:userId" element={<ResetPassword />} /> */}
-          <Route path="/" element={<GridData />} />
+          <Route path="/" element={<GridData useLabels={useLabels} />} />
         </Routes>
-      </Router>
+      </div>
+    </Router>
   );
 }
 
@@ -38,5 +59,3 @@ export default function RootApp() {
     </RecoilRoot>
   );
 }
-
-

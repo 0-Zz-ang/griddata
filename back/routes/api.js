@@ -127,7 +127,6 @@ function createChunksBySize(data) {
     }
   });
 
-  // 마지막 청크가 남아있으면 추가
   if (currentChunk.length > 0) {
     chunks.push(currentChunk);
   }
@@ -135,16 +134,79 @@ function createChunksBySize(data) {
   return chunks;
 }
 
+
+async function getFieldLabel(dataElement) {
+  try {
+    const apiUrl = `${config.unifierUrl}/ws/rest/service/v1/ds/data-elements`;
+    const response = await axios.get(apiUrl, {
+      params: { filter: `{"data_element":"${dataElement}"}` },
+      headers: {
+        Authorization: `Bearer ${config.token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    return response.data.data[0]?.form_label || dataElement; // 라벨이 없으면 필드 이름 반환
+  } catch (error) {
+    console.error(`Error fetching label for ${dataElement}:`, error.message);
+    return dataElement; // 에러 발생 시 필드 이름 그대로 반환
+  }
+}
+
+// 필드 이름에 따른 라벨을 가져오는 라우터
+router.post('/getFieldLabels', async (req, res) => {
+  const { dataElements } = req.body; // 클라이언트에서 필드 이름 목록을 받음
+
+  try {
+    // 각 필드 이름에 대해 라벨을 병렬로 가져오기
+    const labelPromises = dataElements.map(element => getFieldLabel(element));
+    const labels = await Promise.all(labelPromises);
+
+    // 필드 이름과 라벨을 키-값 쌍으로 매핑
+    const labelMap = dataElements.reduce((acc, field, index) => {
+      acc[field] = labels[index];
+      return acc;
+    }, {});
+
+    res.status(200).json({ labels: labelMap });
+  } catch (error) {
+    console.error('필드 라벨 가져오기 오류:', error);
+    res.status(500).json({ message: '필드 라벨을 가져오는 중 오류가 발생했습니다.' });
+  }
+});
+
+
+
+
+
 // Grid Data에 새로 입력된 데이터(로컬스토리지에 저장된 데이터)를 유니파이어에 전송 
 router.post('/sendData', async (req, res) => {
   const { options, data } = req.body;
-  console.log("프로젝트 번호 : ", options.projectNumber);
-
-
   const recordsWithoutRecordNo = data.filter(record => !record.record_no);
   const recordsWithRecordNo = data.filter(record => record.record_no);
   const recordsWithLineAutoSeq = data.filter(record => record._bp_lineitems && record._bp_lineitems.some(item => item.LineAutoSeq));
-  console.log("라인 아이템 업데이트 대상:", recordsWithLineAutoSeq);
+  const maxRetries = 3;
+
+  const sendRequest = async (requestFn, requestData) => {
+    return requestFn(requestData);
+  };
+
+  const retryRequests = async (promises, retriesLeft) => {
+    const results = await Promise.allSettled(promises);
+
+    const failedRequests = results
+      .map((result, index) => (result.status === 'rejected' ? promises[index] : null))
+      .filter(Boolean);
+
+    if (failedRequests.length > 0 && retriesLeft > 0) {
+      console.log(`재시도 남은 횟수: ${retriesLeft}, 실패한 요청 개수: ${failedRequests.length}`);
+      return retryRequests(failedRequests, retriesLeft - 1);
+    } else if (failedRequests.length > 0) {
+      throw new Error('일부 요청이 여러 번 재시도 후에도 실패했습니다.');
+    }
+
+    return results;
+  };
+
   try {
     // 신규 레코드 추가 - 청크로 나누기
     const newRecordsChunks = createChunksBySize(recordsWithoutRecordNo);
@@ -160,18 +222,17 @@ router.post('/sendData', async (req, res) => {
         }))
       };
 
-      return axios.post( 
-        options.projectNumber === "0" ?
-        `${config.unifierUrl}/ws/rest/service/v1/bp/record` : `${config.unifierUrl}/ws/rest/service/v1/bp/record/${options.projectNumber}`,
-        requestBody,
-        {
-          headers: {
-            'Authorization': `Bearer ${config.token}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      return sendRequest(async (data) => {
+        return axios.post(
+          options.projectNumber === "0" ?
+          `${config.unifierUrl}/ws/rest/service/v1/bp/record` :
+          `${config.unifierUrl}/ws/rest/service/v1/bp/record/${options.projectNumber}`,
+          data,
+          { headers: { 'Authorization': `Bearer ${config.token}`, 'Content-Type': 'application/json' } }
+        );
+      }, requestBody);
     });
+
 
     // 신규 라인아이템 추가 / 기존 레코드 수정   - 청크로 나누기
     const updateRecordsChunks = createChunksBySize(recordsWithRecordNo);
@@ -188,24 +249,22 @@ router.post('/sendData', async (req, res) => {
         }))
       };
       
-      return axios.put(
-        options.projectNumber === "0" ?
-        `${config.unifierUrl}/ws/rest/service/v1/bp/record` :
-        `${config.unifierUrl}/ws/rest/service/v1/bp/record/${options.projectNumber}`,
-        requestBody,
-        {
-          headers: {
-            'Authorization': `Bearer ${config.token}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      return sendRequest(async (data) => {
+        return axios.put(
+          options.projectNumber === "0" ?
+          `${config.unifierUrl}/ws/rest/service/v1/bp/record` :
+          `${config.unifierUrl}/ws/rest/service/v1/bp/record/${options.projectNumber}`,
+          data,
+          { headers: { 'Authorization': `Bearer ${config.token}`, 'Content-Type': 'application/json' } }
+        );
+      }, requestBody);
     });
 
+
+    // 기존 라인아이템 수정 
       const updateLinesChunks = createChunksBySize(recordsWithLineAutoSeq);
       
-    
-      const updateLinePromiise = updateLinesChunks.map(chunk => {
+      const updateLineItemPromises = updateLinesChunks.map(chunk => {
         const requestBody = {
           options: {
             bpname: options.bpName,
@@ -219,51 +278,62 @@ router.post('/sendData', async (req, res) => {
             }))
           }))
         };
-        console.log("라인 아이템 업데이트 요청 바디:", JSON.stringify(requestBody, null, 2));
     
-        return axios.put(
-          options.projectNumber === "0" ?
-          `${config.unifierUrl}/ws/rest/service/v1/bp/record` :
-          `${config.unifierUrl}/ws/rest/service/v1/bp/record/${options.projectNumber}`,
-          requestBody,
-          {
-            headers: {
-              'Authorization': `Bearer ${config.token}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
+        return sendRequest(async (data) => {
+          return axios.put(
+            options.projectNumber === "0" ?
+            `${config.unifierUrl}/ws/rest/service/v1/bp/record` :
+            `${config.unifierUrl}/ws/rest/service/v1/bp/record/${options.projectNumber}`,
+            data,
+            { headers: { 'Authorization': `Bearer ${config.token}`, 'Content-Type': 'application/json' } }
+          );
+        }, requestBody);
       });
       
-    
-
-
-    // 모든 요청을 병렬로 처리
-    const responses = await Promise.all([...newRecordPromises, ...updateLinePromiise, ...updateRecordPromises]);
+    const results = await retryRequests([...newRecordPromises, ...updateRecordPromises, ...updateLineItemPromises], maxRetries);
 
     // 응답 처리
-    const recordStatusList = responses.map(response => {
-      const status = response.data?.message[0]?._record_status || '알 수 없음';
-      console.log('Unifier 응답:', response.data);
-      return status;
+    const recordStatusList = results.map((result) => {
+      if (result.status === 'fulfilled') {
+        const status = result.value.data?.message[0]?._record_status || '알 수 없음';
+        console.log('Unifier 성공 응답:', result.value.data);
+        return { status, success: true, data: result.value.data };
+      } else {
+        console.error('Unifier 오류 응답:', result.reason);
+        return { status: '실패', success: false, error: result.reason.message, details: result.reason };
+      }
     });
 
-    // 결과 처리
-    const failedRecords = recordStatusList.filter(status => status !== 'success');
+    // 성공과 실패 결과 구분
+    const failedRecords = recordStatusList.filter((item) => !item.success);
+    const successfulRecords = recordStatusList.filter((item) => item.success);
+
     if (failedRecords.length === 0) {
       console.log('모든 레코드 및 라인아이템 처리 성공');
-      res.status(200).json({ message: '모든 레코드와 라인아이템이 성공적으로 처리되었습니다.' });
+      res.status(200).json({
+        message: '모든 레코드와 라인아이템이 성공적으로 처리되었습니다.',
+        successfulRecords: successfulRecords.map((item) => item.data),
+      });
     } else {
       console.error('일부 레코드 처리 중 오류 발생:', failedRecords);
-      res.status(400).json({ message: `일부 레코드 처리 중 오류 발생: ${failedRecords.join(', ')}` });
+      res.status(400).json({
+        message: '일부 레코드 처리 중 오류 발생',
+        failedRecords: failedRecords.map((item) => ({
+          error: item.error,
+          details: item.details.response?.data || item.details,
+        })),
+        successfulRecords: successfulRecords.map((item) => item.data),
+      });
     }
-
   } catch (error) {
-    console.error('Unifier API 호출 중 오류 발생:', error);
-    res.status(500).json({ message: 'Unifier API 호출 중 오류가 발생했습니다.' });
+    console.error('Unifier API 호출 중 치명적 오류 발생:', error);
+    res.status(500).json({
+      message: 'Unifier API 호출 중 치명적 오류가 발생했습니다.',
+      error: error.message,
+      details: error.response?.data || error,
+    });
   }
 });
-
 
 
 
@@ -334,41 +404,6 @@ router.post("/deleteLineItem", async (req, res) => {
       message: '서버 오류: BP 데이터를 삭제하는 중 문제가 발생했습니다.',
       error: error.message,
     });
-  }
-});
-
-
-router.post("/addLineItem", async (req, res) => {
-  const { bpName, projectNumber, recordNo, lineItemData } = req.body;
-
-  try {
-    const response = await axios.put(`${config.unifierUrl}/ws/rest/service/v1/bp/record${projectNumber === '0' ? '' : `/${projectNumber}`}`, {
-      options: {
-        bpname: bpName,
-        LineItemIdentifier: "LineAutoSeq",
-      },
-      data: [
-        {
-          record_no: recordNo,
-          _bp_lineitems: [
-            {
-              ...lineItemData,  // 추가할 라인아이템의 데이터
-              LineAutoSeq: "자동생성",  // 필요한 경우 자동생성된 시퀀스 값 사용
-            },
-          ],
-        },
-      ],
-    }, {
-      headers: {
-        Authorization: `Bearer ${config.token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    res.status(200).json({ message: "라인아이템 추가 성공", data: response.data });
-  } catch (error) {
-    console.error("라인아이템 추가 오류:", error.message);
-    res.status(500).json({ message: "라인아이템 추가 중 오류가 발생했습니다.", error: error.message });
   }
 });
 

@@ -1,87 +1,84 @@
 import React, { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import axios from "axios";
 import { DataGridPro, useGridApiRef } from "@mui/x-data-grid-pro";
-import {
-  Box,
-  Button,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  IconButton,
-  Tooltip,
-} from "@mui/material";
+import {Box,Button,FormControl,Select,MenuItem,IconButton,Modal,} from "@mui/material";
 import * as XLSX from "xlsx";
 import { v4 as uuidv4 } from "uuid";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import CloseIcon from "@mui/icons-material/Close";
 import { useTranslation } from "react-i18next";
-import AddIcon from "@mui/icons-material/Add";
-import UploadIcon from "@mui/icons-material/Upload";
-import DownloadIcon from "@mui/icons-material/Download";
+import localeTexts from "../locales/localeText";
 
 const api_url = process.env.REACT_APP_LOCAL_URL;
 
-function GridData() {
+function GridData({useLabels}) {
+  const { t, i18n } = useTranslation();
   const location = useLocation();
-  const navigate = useNavigate();
-  const {
-    selectedBp: initialSelectedBp,
-    selectedProjectNumber: initialSelectedProjectNumber,
-  } = location.state || {};
-  const [selectedRow, setSelectedRow] = useState(null); // 모달에 표시할 선택된 행
-  const [isModalOpen, setIsModalOpen] = useState(false); // 모달 상태
+  const {selectedBp: initialSelectedBp,selectedProjectNumber: initialSelectedProjectNumber,} = location.state || {};
+  const [selectedRow, setSelectedRow] = useState(null); // 모달에 표시될거 
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [rows, setRows] = useState([]);
   const [columns, setColumns] = useState([]);
   const [projects, setProjects] = useState([]);
   const [bps, setBps] = useState([]);
-  const [selectedProject, setSelectedProject] = useState(
-    initialSelectedProjectNumber || ""
-  );
+  const [selectedProject, setSelectedProject] = useState(initialSelectedProjectNumber || "");
   const [selectedBp, setSelectedBp] = useState(initialSelectedBp || "");
   const [existingRecords, setExistingRecords] = useState([]);
   const [fileInputKey, setFileInputKey] = useState(Date.now());
   const [isDataSaved, setIsDataSaved] = useState(false);
   const [isEditable, setIsEditable] = useState(true);
   const [isSaveMode, setIsSaveMode] = useState(true); // 저장 모드와 수정 모드 전환
-  const [lineItemColumns, setLineItemColumns] = useState([]);
   const [globalLineItemColumns, setGlobalLineItemColumns] = useState([]);
-    const handleOpenModal = (row) => {
-    setSelectedRow(row); // 선택된 행을 설정
-    setIsModalOpen(true); // 모달 열기
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false); // 모달 닫기
-  };
+  const handleOpenModal = (row) => {setSelectedRow(row);setIsModalOpen(true);};
+  const handleCloseModal = () => {setIsModalOpen(false);};
+  const [labels, setLabels] = useState({});
 
   const apiRef = useGridApiRef();
 
+  // 라인아이템 추가
   const handleAddLineItem = (parentRowId) => {
     setRows((prevRows) =>
       prevRows.map((row) => {
         if (row.id === parentRowId) {
-          // id 컬럼을 제외하고 빈 라인아이템 생성
           const newLineItem = {
             id: uuidv4(),
             ...globalLineItemColumns.reduce((acc, column) => {
-              if (column !== "id") {
-                // id 컬럼 제외
+              if (column !== "id") {// id 컬럼 제외
                 acc[column] = ""; // 각 필드를 빈 값으로 초기화
               }
               return acc;
             }, {}),
           };
-          return {
+
+          const updatedRow = {
             ...row,
             _bp_lineitems: [...(row._bp_lineitems || []), newLineItem],
           };
+
+          if (selectedRow && selectedRow.id === parentRowId) {
+            setSelectedRow(updatedRow);
+          }
+          return updatedRow;
         }
         return row;
-      })
-    );
+      }));
   };
+  useEffect(() => {
+    
+}, [selectedBp, i18n.language, useLabels]);
+
+
+  useEffect(() => {
+    if (columns.length > 0) {
+      setColumns((prevColumns) =>
+        prevColumns.map((col) =>
+          col.field === "viewLineItems"
+            ? { ...col, headerName: "라인 아이템 조회" }
+            : col
+        ));
+    }}, [i18n.language,t,columns.length]);
 
   const handleAddRow = () => {
     const newRow = {
@@ -140,11 +137,20 @@ function GridData() {
     }
   }, [selectedProject]);
 
-  // 저장된 데이터 확인
-  useEffect(() => {
-    const savedDataKey = `project_${selectedProject}_bp_${selectedBp}`;
-    const savedData = localStorage.getItem(savedDataKey);
-  }, [selectedProject, selectedBp]);
+  const fetchLabel = async (fieldName) => {
+    try {
+      const response = await axios.get(`${api_url}/api/getDataElementLabel`, {
+        params: { data_element: fieldName }
+      });
+      return response.data?.data[0]?.form_label || fieldName; // label이 없을 경우 fieldName을 사용
+    } catch (error) {
+      console.error("Label fetch error for field:", fieldName, error);
+      return fieldName;
+    }
+  };
+  
+
+
 
   // BP 데이터 가져오기
   const fetchData = async () => {
@@ -162,36 +168,80 @@ function GridData() {
       );
 
       if (sampleRecordWithLineItems) {
-        const lineItemKeys = Object.keys(
-          sampleRecordWithLineItems._bp_lineitems[0]
-        );
-        setGlobalLineItemColumns(lineItemKeys); // 라인아이템 컬럼 형식 전역 설정
+        const lineItemKeys = Object.keys(sampleRecordWithLineItems._bp_lineitems[0]);
+        setGlobalLineItemColumns(lineItemKeys);
       }
 
       const formattedRows = data.map((item) => ({
-        id: item.id || uuidv4(), // id가 없으면 UUID를 생성하여 사용
+        id: item.id || uuidv4(),
         ...item,
       }));
 
       setRows(formattedRows);
 
-      if (data.length > 0) {
-        const dynamicColumns = Object.keys(data[0])
-          .filter((key) => key !== "_bp_lineitems")
-          .map((key) => ({
-            field: key,
-            headerName: key,
-            width: 150,
-          }));
-        setColumns(dynamicColumns);
-        setIsDataSaved(false);
+      const lineItemFields = sampleRecordWithLineItems ? Object.keys(sampleRecordWithLineItems._bp_lineitems[0]) : [];
+      const labelResponse = await axios.post(`${api_url}/api/getFieldLabels`, { dataElements: lineItemFields });
+      const lineItemLabels = labelResponse.data.labels;
 
-        setExistingRecords(formattedRows);
-      }
+      const dynamicLineItemColumns = lineItemFields.map((key) => ({
+        field: key,
+        headerName: useLabels ? lineItemLabels[key] || key : key,
+        width: 150,
+        editable: isEditable,
+        align: "center",
+        headerAlign: "center",
+        flex: 1,
+        minWidth: 150,
+      }));
+
+      const hasLineItems = formattedRows.some(
+        (row) => row._bp_lineitems && row._bp_lineitems.length > 0
+      );
+
+      const dataElements = Object.keys(data[0] || {}).filter((key) => key !== "_bp_lineitems");
+      const recordLabelResponse = await axios.post(`${api_url}/api/getFieldLabels`, { dataElements });
+      const recordLabels = recordLabelResponse.data.labels;
+
+      const dynamicColumns = [
+        ...dataElements.map((key) => ({
+          field: key,
+          headerName: useLabels ? recordLabels[key] || key : key,
+          width: 150,
+        })),
+        ...(hasLineItems
+          ? [
+              {
+                field: "viewLineItems",
+                headerName: "라인 아이템 조회",
+                renderCell: (params) => (
+                  <Button variant="outlined" color="primary" onClick={() => handleOpenModal(params.row)}>
+                    라인 아이템 조회
+                  </Button>
+                ),
+                width: 150,
+                align: "center",
+                headerAlign: "center",
+              },
+            ]
+          : []),
+      ];
+
+      setColumns(dynamicColumns);
+      setIsDataSaved(false);
+      setExistingRecords(formattedRows);
+      setGlobalLineItemColumns(dynamicLineItemColumns);
     } catch (error) {
       console.error("BP 데이터 가져오기 오류:", error);
     }
   };
+
+  const handleGetData = () => {
+    if (selectedBp) {
+      fetchData();
+    }
+  };
+
+
 
   const handleProjectChange = (event) => {
     setSelectedProject(event.target.value);
@@ -205,11 +255,6 @@ function GridData() {
   };
 
   const downloadExcelFile = (data, selectedBp) => {
-    if (!data || data.length === 0) {
-      console.error("다운로드할 데이터가 없습니다.");
-      return;
-    }
-
     const mainRecords = [];
     const lineItems = [];
 
@@ -260,11 +305,10 @@ function GridData() {
     const [projectPart, bpPart] = fileName.split("_");
 
     if (!projectPart || !bpPart) {
-      alert(
-        '파일 이름이 형식에 맞지 않습니다. "프로젝트번호_Bp이름.xlsx" 형식이어야 합니다.'
-      );
+      alert("파일 이름이 형식에 맞지 않습니다. '프로젝트번호_BP이름.xlsx' 형식이어야 합니다.");
       return;
     }
+
     setSelectedProject(projectPart);
 
     console.log(bps);
@@ -341,25 +385,6 @@ function GridData() {
     reader.readAsArrayBuffer(file);
   };
 
-  const saveData = () => {
-    if (!rows || rows.length === 0) {
-      console.error("저장할 데이터가 없습니다.");
-      return;
-    }
-
-    alert("데이터가 저장되었습니다.");
-
-    // 저장이 완료되었으므로 전송 버튼 활성화 및 데이터 수정 불가 상태 설정
-    setIsEditable(false);
-    setIsDataSaved(true);
-
-    // 모든 row를 수정 불가 상태로 변경
-    // const updatedRows = rows.map((row) => ({
-    //   ...row,
-    //   isEditable: false,
-    // }));
-    // setRows(updatedRows);
-  };
   const toggleSaveEdit = () => {
     const nonEmptyRow = rows.filter((row) => {
       // row_id를 제외하고 값이 있는지 확인
@@ -428,8 +453,6 @@ function GridData() {
         data: rows,
       };
 
-      console.log("전체 데이터 전송 중...");
-
       const response = await axios.post(`${api_url}/api/sendData`, requestBody);
 
       if (response.status === 200) {
@@ -452,18 +475,21 @@ function GridData() {
     }
   };
 
+  useEffect(() => {
+    if (isModalOpen && selectedRow) {
+      const updatedRow = rows.find((row) => row.id === selectedRow.id);
+      if (updatedRow) {
+        setSelectedRow(updatedRow);
+      }
+    }
+  }, [isModalOpen, rows, selectedRow]);
+
   const handleLineItemDelete = async (parentRow, LineAutoSeq) => {
-    // const lineItem = parentRow._bp_lineitems[LineAutoSeq];
-    // console.log(lineItem);
 
     const confirmDelete = window.confirm("정말 삭제하시겠습니까?");
     if (!confirmDelete) {
       return;
     }
-    console.log("선택된 BP 이름:", selectedBp);
-    console.log("선택된 프로젝트 번호:", selectedProject);
-    console.log("레코드 번호:", parentRow.record_no);
-    console.log("선택된 라인아이템 LineAutoSeq:", LineAutoSeq);
 
     try {
       const response = await axios.post(`${api_url}/api/deleteLineItem`, {
@@ -476,7 +502,7 @@ function GridData() {
       // API 호출 성공 시 해당 아이템 삭제
       if (response.status === 200) {
         const updatedLineItems = parentRow._bp_lineitems.filter(
-          (item, index) => index !== LineAutoSeq
+          (item) => item.LineAutoSeq !== LineAutoSeq
         );
 
         // 부모 행의 _bp_lineitems 업데이트
@@ -486,135 +512,147 @@ function GridData() {
             : row
         );
         setRows(updatedRows);
+        if (selectedRow && selectedRow.id === parentRow.id) {
+          setSelectedRow((prevSelectedRow) => ({
+            ...prevSelectedRow,
+            _bp_lineitems: updatedLineItems,
+          }));
+        }
 
-        alert(
-          `레코드 번호 ${parentRow.record_no}의 라인아이템 ${LineAutoSeq}을(를) 삭제했습니다.`
-        );
+        alert(`레코드 번호 ${parentRow.record_no}의 라인아이템 ${LineAutoSeq}을(를) 삭제했습니다.`);
+        await fetchData(); // 삭제 후 데이터 다시 가져오기
       } else {
-        alert(`삭제 실패: ${response.data.message}`);
+        alert(t("삭제 실패:", { message: response.data.message }));
       }
     } catch (error) {
       if (error.response && error.response.data) {
         console.error("삭제 중 오류 발생:", error.response.data);
-        alert(`삭제 중 오류가 발생했습니다: ${error.response.data.message}`);
+        alert(
+          t("삭제 중 오류가 발생했습니다:", { message: error.response.data.message })
+        );
       } else {
         console.error("삭제 중 오류 발생:", error);
-        alert("삭제 중 오류가 발생했습니다.");
+        alert(t("삭제 중 오류가 발생했습니다:"));
       }
     }
   };
+
+  useEffect(() => {
+  if (selectedBp) {
+    fetchData();
+  }
+}, [useLabels]); 
+
+
 
   return (
     // <Paper
     //   sx={{ padding: 4, width: "auto", margin: "auto" }}
     // >
     <div style={{ padding: "16px", width: "auto", margin: "0 auto" }}>
-      <Box sx={{ display: "flex", gap: 1, marginBottom: 1 }}>
-      <Box sx={{ display: "flex", gap: 1, flexGrow: 1, alignItems: 'center' }}>
-  <FormControl variant="outlined" sx={{ minWidth: 120, height:'32px' }}>
-    <InputLabel 
-      id="project-select-label" 
-      sx={{ fontSize: '0.8rem' }}  // 글씨 크기 줄이기
-    >
-      프로젝트
-    </InputLabel>
-    <Select
-      labelId="project-select-label"
-      value={selectedProject}
-      onChange={handleProjectChange}
-      label="프로젝트"
-      sx={{ height: '32px', fontSize: '0.8rem' }}  // 높이와 글씨 크기 줄이기
-    >
-      {projects.map((project) => (
-        <MenuItem
-          key={project.project_number}
-          value={project.project_number}
-          sx={{ fontSize: '0.8rem' }}  // 메뉴 아이템 크기도 줄이기
-        >
-          {project.project_name}
-        </MenuItem>
-      ))}
-    </Select>
-  </FormControl>
-
-  <FormControl
-    variant="outlined"
-    sx={{ minWidth: 120, height: '32px' }}
-    disabled={!bps.length}
-  >
-    <InputLabel 
-      id="bp-select-label" 
-      sx={{ fontSize: '0.8rem' }}  // 글씨 크기 줄이기
-    >
-      BP
-    </InputLabel>
-    <Select
-      labelId="bp-select-label"
-      value={selectedBp}
-      onChange={handleBpChange}
-      label="BP"
-      sx={{ height: '32px', fontSize: '0.8rem' }}  // 높이와 글씨 크기 줄이기
-    >
-      {bps.map((bp) => (
-        <MenuItem 
-          key={bp.bpname} 
-          value={bp.bpname}
-          sx={{ fontSize: '0.8rem' }}  // 메뉴 아이템 크기 줄이기
-        >
-          {bp.bpname}
-        </MenuItem>
-      ))}
-    </Select>
-  </FormControl>
-
-  <Button
-    variant="contained"
-    onClick={fetchData}
-    disabled={!selectedBp}
-    sx={{ height: '32px', fontSize: '0.8rem', padding: '4px 8px' }}  // 버튼 크기 및 패딩 줄이기
-  >
-   get
-  </Button>
-</Box>
-
-        <Box sx={{ display: "flex", gap: 2 }}>
-          <Tooltip title="엑셀파일 다운로드" arrow>
-            <IconButton
-              variant="outlined"
-              onClick={() => downloadExcelFile(rows, selectedBp)}
-              disabled={rows.length === 0}
+      <Box
+        sx={{display: "flex",gap: 1,marginTop: 3,marginBottom: 3,alignItems: "center",}}>
+        <Box
+          sx={{ display: "flex", gap: 1, flexGrow: 1, alignItems: "center" }}>
+          <FormControl
+            variant="outlined"
+            sx={{ minWidth: 120, height: "32px" }}>
+            <Select
+              labelId="project-select-label"
+              value={selectedProject}
+              onChange={handleProjectChange}
+              displayEmpty
+              sx={{ height: "32px", fontSize: "0.8rem", textAlign: "center" }}
+              renderValue={(selected) => {
+                if (selected.length === 0) {
+                  return (
+                    <span style={{ color: "#aaa" }}>
+                      프로젝트
+                    </span>
+                  );
+                }
+                return projects.find(
+                  (project) => project.project_number === selected
+                )?.project_name;
+              }}
             >
-              <DownloadIcon />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="엑셀파일 업로드" arrow>
-            <IconButton
-              variant="outlined"
-              component="label"
+              {projects.map((project) => (
+                <MenuItem
+                  key={project.project_number}
+                  value={project.project_number}
+                  sx={{ fontSize: "0.8rem" }}
+                >
+                  {project.project_name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <FormControl
+            variant="outlined"
+            sx={{ minWidth: 120, height: "32px" }}
+            disabled={!bps.length}
+          >
+            <Select
+              labelId="bp-select-label"
+              value={selectedBp}
+              onChange={handleBpChange}
+              displayEmpty
+              sx={{ height: "32px", fontSize: "0.8rem" }}
+              renderValue={(selected) => {
+                if (selected.length === 0) {
+                  return (
+                    <span style={{ color: "#aaa" }}>BP</span>
+                  );
+                }
+                return bps.find((bp) => bp.bpname === selected)?.bpname;
+              }}
             >
-              <UploadIcon />
-              <input
-                type="file"
-                key={fileInputKey}
-                hidden
-                accept=".xlsx, .xls"
-                onChange={handleExcelUpload}
-              />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="BP레코드 추가" arrow>
-            <IconButton
-              variant="outlined"
-              disabled={rows.length === 0}
-              onClick={handleAddRow}
-            >
-              <AddIcon />
-            </IconButton>
-          </Tooltip>
+              {bps.map((bp) => (
+                <MenuItem
+                  key={bp.bpname}
+                  value={bp.bpname}
+                  sx={{ fontSize: "0.8rem" }}
+                >
+                  {bp.bpname}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <Button variant="outlined" onClick={handleGetData} disabled={!selectedBp}  sx={{ height: "32px", fontSize: "0.8rem", textAlign: "center" }}>
+            get
+          </Button>
+          <Button variant="outlined" component="label"  sx={{ height: "32px", fontSize: "0.8rem", textAlign: "center" }}>
+           엑셀 업로드
+            <input
+              type="file"
+              key={fileInputKey}
+              hidden
+              accept=".xlsx, .xls"
+              onChange={handleExcelUpload}
+            />
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={() => downloadExcelFile(rows, selectedBp)}
+            disabled={rows.length === 0}
+            sx={{ height: "32px", fontSize: "0.8rem", textAlign: "center" }}
+          >
+          엑셀 다운로드
+          </Button>
+          <Button
+            variant="outlined"
+            disabled={rows.length === 0}
+            onClick={handleAddRow}
+            sx={{ height: "32px", fontSize: "0.8rem", textAlign: "center" }}
+          >
+           레코드 추가
+          </Button>
         </Box>
       </Box>
 
-      <div style={{ height: 600, width: "100%" }}>
+      <div style={{ height: 750, width: "100%", marginTop: 5 }}>
         <DataGridPro
           apiRef={apiRef}
           rows={rows}
@@ -623,158 +661,157 @@ function GridData() {
             editable: isEditable,
             align: "center",
             headerAlign: "center",
+            flex: 1,
+            minWidth: 150,
           }))}
-          pageSize={10}
-          rowsPerPageOptions={[5, 10, 20]}
           pagination
+          autoPageSize
+          localeText={localeTexts[i18n.language]} 
+          style={{ width: "100%", height: "100%" }}
           processRowUpdate={(newRow, oldRow) => {
             const updatedRows = rows.map((row) =>
               row.id === oldRow.id ? newRow : row
             );
-            setRows(updatedRows); // 상태 업데이트
+            setRows(updatedRows); 
             return newRow;
           }}
           experimentalFeatures={{ newEditingApi: true }}
           onProcessRowUpdateError={(error) =>
             console.error("Row update error:", error)
           }
-          getDetailPanelContent={(params) => (
-            <div
-              style={{
-                width: "100%",
-                padding: "10px",
-                backgroundColor: "#f9f9f9",
-                border: "1px solid #cccccc",
-                borderRadius: "8px",
-                boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.05)",
-                transition: "height 0.3s ease",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  marginBottom: "10px",
-                }}
-              >
-                <h3
-                  style={{
-                    margin: 0,
-                    color: "#333",
-                    textAlign: "center",
-                    flex: 1,
-                  }}
-                >
-                  Line Items
-                </h3>
-                <Tooltip title="라인 아이템 추가" arrow>
-                  <IconButton
-                    variant="outlined"
-                    onClick={() => handleAddLineItem(params.row.id)}
-                  >
-                    <AddIcon />
-                  </IconButton>
-                </Tooltip>
-              </div>
-              {params.row._bp_lineitems &&
-              params.row._bp_lineitems.length > 0 ? (
-                <div style={{ width: "100%", overflowY: "auto" }}>
-                  <DataGridPro
-                    rows={params.row._bp_lineitems.map((item, index) => ({
-                      id: item.LineAutoSeq || index, // 유일한 ID 사용
-                      ...item,
-                    }))}
-                    columns={[
-                      {
-                        field: "Actions",
-                        headerName: "",
-                        width: 100,
-                        align: "center",
-                        renderCell: (cellParams) => (
-                          <IconButton
-                            variant="contained"
-                            onClick={() =>
-                              handleLineItemDelete(
-                                params.row,
-                                cellParams.row.id
-                              )
-                            }
-                          >
-                            <DeleteOutlineIcon />
-                          </IconButton>
-                        ),
-                      },
-                      ...globalLineItemColumns
-                        .filter((key) => key !== "id") // id 컬럼을 제외한 나머지 컬럼만 표시
-                        .map((key) => ({
-                          field: key,
-                          headerName: key,
-                          width: 150,
-                          align: "center",
-                          headerAlign: "center",
-                          editable: isEditable,
-                        })),
-                    ]}
-                    pageSize={10}
-                    rowsPerPageOptions={[5]}
-                    hideFooterPagination
-                    hideFooter
-                    autoHeight
-                    processRowUpdate={(newRow, oldRow) => {
-                      console.log("New Row:", newRow);
-                      console.log("Old Row:", oldRow);
-
-                      const updatedRows = rows.map((row) => {
-                        // 부모 행이 일치하는 경우
-                        if (row.id === params.row.id) {
-                          // 라인 아이템에서 수정해야 할 아이템 찾기
-                          const updatedLineItems = row._bp_lineitems.map(
-                            (item) => {
-                              // 수정할 라인 아이템을 찾고 newRow로 업데이트
-                              if (item.LineAutoSeq === newRow.LineAutoSeq) {
-                                // item.id 대신 item.LineAutoSeq 사용
-                                console.log(
-                                  `Updating line item: ${item.LineAutoSeq}`
-                                ); // 수정할 라인 아이템 확인
-                                return { ...item, ...newRow }; // oldRow가 아닌 newRow의 값을 사용
-                              }
-                              return item; // 일치하지 않으면 기존 아이템 반환
-                            }
-                          );
-
-                          // 부모 행을 업데이트하여 새로운 라인 아이템 배열 반환
-                          return { ...row, _bp_lineitems: updatedLineItems };
-                        }
-                        return row; // 다른 행은 그대로 반환
-                      });
-
-                      console.log("Updated Rows:", updatedRows); // 최종 업데이트된 rows 확인
-                      setRows(updatedRows); // 상태 업데이트
-                      return newRow; // 수정된 행 반환
-                    }}
-                  />
-                </div>
-              ) : (
-                <p>No Line Items Available</p>
-              )}
-            </div>
-          )}
-          getDetailPanelHeight={(params) => {
-            const lineItemCount = params.row._bp_lineitems
-              ? params.row._bp_lineitems.length
-              : 0;
-            const rowHeight = 52;
-            const minHeight = 5 * rowHeight;
-            const maxHeight = 400;
-            const panelHeight = Math.min(
-              Math.max(lineItemCount * rowHeight, minHeight),
-              maxHeight
-            );
-            return panelHeight;
-          }}
         />
       </div>
+      <Modal open={isModalOpen} onClose={handleCloseModal}>
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: "90%", // 모달 너비 확대
+            height: "80%", // 모달 높이 확대
+            bgcolor: "background.paper",
+            boxShadow: 24,
+            p: 4,
+            display: "flex",
+            flexDirection: "column", // 레이아웃을 위에서 아래로 정렬
+          }}
+        >
+          {/* 상단 고정 영역 */}
 
+          <IconButton
+            onClick={handleCloseModal}
+            sx={{
+              position: "absolute",
+              top: 8, // 상단에서 약간 떨어진 위치
+              right: 8, // 오른쪽에서 약간 떨어진 위치
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+
+          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
+            <div>
+              <h2>BP : {selectedBp}</h2>
+              <h2>Record_no : {selectedRow?.record_no}</h2>
+            </div>
+          </Box>
+
+          {/* 라인 아이템 추가 버튼 (고정) */}
+          <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => handleAddLineItem(selectedRow.id)}
+            >
+            라인 아이템 추가
+            </Button>
+          </Box>
+
+          {/* 그리드 영역: 스크롤 가능 */}
+          <Box
+            sx={{
+              flex: 1,
+              overflowY: "auto", // 그리드 내부에서만 스크롤,
+              display: "flex", // 추가
+              alignItems: "center", // 세로 중앙 정렬
+              justifyContent: "center", // 가로 중앙 정렬
+            }}
+          >
+            {selectedRow &&
+            selectedRow._bp_lineitems &&
+            selectedRow._bp_lineitems.length > 0 ? (
+              <DataGridPro
+                rows={selectedRow._bp_lineitems.map((item, index) => ({
+                  id: item.LineAutoSeq || index,
+                  ...item,
+                }))}
+                columns={[
+                  {
+                    width: 100,
+                    align: "center",
+                    renderCell: (cellParams) => (
+                      <IconButton
+                        variant="contained"
+                        onClick={() =>
+                          handleLineItemDelete(selectedRow, cellParams.row.id)
+                        }
+                      >
+                        <DeleteOutlineIcon />
+                      </IconButton>
+                    ),
+                  },
+                  // ...Object.keys(selectedRow._bp_lineitems[0])
+                  //   .map((key) => ({
+                  //     field: key,
+                  //     headerName: useLabels ? labels[key] || key : key, // useLabels 상태에 따라 라벨 또는 필드명 표시
+                  //     width: 150,
+                  //     editable: isEditable,
+                  //     align: "center",
+                  //     headerAlign: "center",
+                  //     flex: 1,
+                  //     minWidth: 150,
+                  //   }))
+                  //   .filter((column) => column.field !== "id"),
+                  ...globalLineItemColumns,
+                ]}
+                autoPageSize
+                pagination
+                processRowUpdate={(newRow, oldRow) => {
+                  // 새로 업데이트된 라인아이템을 처리하는 함수
+                  const updatedLineItems = selectedRow._bp_lineitems.map(
+                    (item) =>
+                      item.LineAutoSeq === oldRow.LineAutoSeq ? newRow : item
+                  );
+
+                  // 업데이트된 라인아이템을 selectedRow에 반영
+                  const updatedSelectedRow = {
+                    ...selectedRow,
+                    _bp_lineitems: updatedLineItems,
+                  };
+                  setSelectedRow(updatedSelectedRow);
+
+                  // 전체 rows에서도 업데이트
+                  setRows((prevRows) =>
+                    prevRows.map((row) =>
+                      row.id === selectedRow.id
+                        ? { ...row, _bp_lineitems: updatedLineItems }
+                        : row
+                    )
+                  );
+
+                  return newRow;
+                }}
+                onProcessRowUpdateError={(error) =>
+                  console.error("Row update error:", error)
+                }
+              />
+            ) : (
+             <p> 라인 아이템이 없습니다.</p>
+            )}
+          </Box>
+        </Box>
+      </Modal>
       {rows.length > 0 && (
         <Box
           sx={{
@@ -784,7 +821,7 @@ function GridData() {
             marginTop: 2,
           }}
         >
-          <Button variant="contained" color="primary" onClick={toggleSaveEdit}>
+          <Button variant="outlined" color="primary" onClick={toggleSaveEdit}>
             {isSaveMode ? "저장" : "수정"}
           </Button>
           <Button
