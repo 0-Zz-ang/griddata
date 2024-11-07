@@ -145,12 +145,20 @@ async function getFieldLabel(dataElement) {
         'Content-Type': 'application/json'
       }
     });
-    return response.data.data[0]?.form_label || dataElement; // 라벨이 없으면 필드 이름 반환
+    
+    // data_element 값이 정확히 일치하는 데이터만 찾기
+    const matchedData = response.data.data.find(
+      (item) => item.data_element === dataElement
+    );
+    
+    // 일치하는 항목이 있다면 라벨을, 없으면 필드 이름을 반환
+    return matchedData?.form_label || dataElement;
   } catch (error) {
     console.error(`Error fetching label for ${dataElement}:`, error.message);
     return dataElement; // 에러 발생 시 필드 이름 그대로 반환
   }
 }
+
 
 // 필드 이름에 따른 라벨을 가져오는 라우터
 router.post('/getFieldLabels', async (req, res) => {
@@ -173,9 +181,6 @@ router.post('/getFieldLabels', async (req, res) => {
     res.status(500).json({ message: '필드 라벨을 가져오는 중 오류가 발생했습니다.' });
   }
 });
-
-
-
 
 
 // Grid Data에 새로 입력된 데이터(로컬스토리지에 저장된 데이터)를 유니파이어에 전송 

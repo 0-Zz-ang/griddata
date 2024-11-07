@@ -65,9 +65,6 @@ function GridData({useLabels}) {
         return row;
       }));
   };
-  useEffect(() => {
-    
-}, [selectedBp, i18n.language, useLabels]);
 
 
   useEffect(() => {
@@ -234,6 +231,12 @@ function GridData({useLabels}) {
       console.error("BP 데이터 가져오기 오류:", error);
     }
   };
+// useLabels가 변경될 때 fetchData를 자동 호출
+useEffect(() => {
+  if (selectedBp) {
+    fetchData();
+  }
+}, [useLabels]); // useLabels 변경 시 데이터 새로 고침
 
   const handleGetData = () => {
     if (selectedBp) {
@@ -536,12 +539,6 @@ function GridData({useLabels}) {
       }
     }
   };
-
-  useEffect(() => {
-  if (selectedBp) {
-    fetchData();
-  }
-}, [useLabels]); 
 
 
 
